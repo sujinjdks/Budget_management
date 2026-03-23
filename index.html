@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>회의비 관리</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+  --bg: #f3f5f8;
+  --bg-grad-1: #f8fafc;
+  --bg-grad-2: #eef2f7;
+  --card: rgba(255,255,255,0.92);
+  --line: #e7ebf0;
+  --text: #1f2937;
+  --subtext: #6b7280;
+  --point: #1f4f46;
+  --point-hover: #183d37;
+  --point-soft: #eef4f2;
+  --danger: #c24141;
+  --shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+  --radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Pretendard', 'Noto Sans KR', 'Segoe UI', sans-serif;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 56px;
+  background: linear-gradient(180deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+  color: var(--text);
+}
+
+h2 {
+  text-align: center;
+  margin: 0 0 24px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #111827;
+}
+
+.menu {
+  display: flex;
+  margin-bottom: 18px;
+  gap: 10px;
+  background: rgba(255,255,255,0.72);
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,0.9);
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(8px);
+}
+
+.menu button {
+  flex: 1;
+  padding: 13px 16px;
+  border: none;
+  background: transparent;
+  color: var(--subtext);
+  cursor: pointer;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.menu button:hover {
+  background: #f7f8fa;
+  color: #374151;
+}
+
+.menu button.active {
+  background: #ffffff;
+  color: var(--point);
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(31, 79, 70, 0.10);
+}
+
+.card {
+  background: var(--card);
+  padding: 24px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255,255,255,0.95);
+  margin-bottom: 18px;
+  backdrop-filter: blur(6px);
+}
+
+input, select, textarea, button {
+  width: 100%;
+  padding: 12px 14px;
+  margin: 6px 0;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--text);
+  transition: all 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: rgba(31, 79, 70, 0.35);
+  box-shadow: 0 0 0 4px rgba(31, 79, 70, 0.08);
+}
+
+textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+button.save,
+button.action-btn {
+  background: var(--point);
+  color: white;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  transition: all 0.2s ease;
+}
+
+button.save:hover,
+button.action-btn:hover {
+  background: var(--point-hover);
+  transform: translateY(-1px);
+}
+
+button.action-btn.secondary {
+  background: #4b5563;
+}
+
+button.action-btn.secondary:hover {
+  background: #374151;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  overflow: verflow;
+  border-radius: 14px;
+}
+
+th, td {
+  padding: 14px 10px;
+  border-bottom: 1px solid #edf0f3;
+  text-align: center;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+th {
+  background: #f8fafc;
+  color: #475467;
+  font-weight: 700;
+}
+
+td {
+  background: #fff;
+  color: var(--text);
+}
+
+tr:hover td {
+  background: #fbfcfd;
+}
+
+.total {
+  font-weight: 700;
+  text-align: right;
+  margin-top: 10px;
+  font-size: 15px;
+  color: #111827;
+}
+
+.hidden {
+  display: none;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.budget-box {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #edf0f3;
+}
+
+.info-text {
+  font-size: 12px;
+  color: var(--subtext);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.last-sync {
+  font-size: 12px;
+  color: var(--subtext);
+  background: #f8fafc;
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+
+.ai-box {
+  background: linear-gradient(180deg, #fbfcfd 0%, #f7f9fb 100%);
+  border: 1px solid #e8edf3;
+  border-radius: 14px;
+  padding: 16px 18px;
+  line-height: 1.75;
+  font-size: 14px;
+  white-space: pre-line;
+  color: #334155;
+  height: 100%;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.rank-badge {
+  display: inline-block;
+  min-width: 28px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--point-soft);
+  color: var(--point);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.chart-wrap {
+  margin-top: 14px;
+  padding: 16px;
+  background: #fcfcfd;
+  border: 1px solid #eef2f6;
+  border-radius: 16px;
+}
+
+.chart-note {
+  font-size: 12px;
+  color: var(--subtext);
+  margin-top: 8px;
+}
+
+canvas {
+  max-width: 100%;
+}
+
+.bar-wrap {
+  width: 100%;
+  height: 380px;
+  margin: 0 auto;
+}
+
+.top-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.search-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.search-inline {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.search-inline input {
+  flex: 1;
+  margin: 0;
+}
+
+.search-inline button {
+  width: 120px;
+  margin: 0;
+}
+
+.search-help {
+  font-size: 12px;
+  color: var(--subtext);
+  margin-top: -2px;
+}
+
+.search-result-empty {
+  padding: 16px;
+  background: #fafafa;
+  border: 1px dashed #d8dee6;
+  border-radius: 12px;
+  color: var(--subtext);
+  font-size: 13px;
+}
+
+.accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.accordion-item {
+  border: 1px solid #e7ebf0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.accordion-head {
+  width: 100%;
+  border: none;
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.accordion-head:hover {
+  background: #f9fbfc;
+}
+
+.accordion-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.accordion-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.accordion-sub {
+  font-size: 12px;
+  color: var(--subtext);
+}
+
+.accordion-arrow {
+  width: auto;
+  min-width: 28px;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  color: #64748b;
+  padding: 0;
+  margin: 0;
+  transition: transform 0.2s ease;
+}
+
+.accordion-item.open .accordion-arrow {
+  transform: rotate(180deg);
+}
+
+.accordion-body {
+  display: none;
+  padding: 0 16px 16px;
+  border-top: 1px solid #f1f5f9;
+  background: #fcfdff;
+}
+
+.accordion-item.open .accordion-body {
+  display: block;
+}
+
+.result-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.result-chip {
+  background: #f8fafc;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.result-chip .label {
+  font-size: 12px;
+  color: var(--subtext);
+  margin-bottom: 4px;
+}
+
+.result-chip .value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.result-detail-box {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #e8edf3;
+  background: white;
+}
+
+.result-detail-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #111827;
+}
+
+.result-detail-line {
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.7;
+}
+
+.note-inline {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--subtext);
+}
+
+.action-menu-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.action-menu-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  color: #4b5563;
+  padding: 0;
+  margin: 0;
+}
+
+.action-menu-btn:hover {
+  background: #f8fafc;
+}
+
+.action-menu {
+  position: absolute;
+  right: 0;
+  top: 38px;
+  min-width: 96px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  padding: 6px;
+  z-index: 30;
+  display: none;
+}
+
+.action-menu.show {
+  display: block;
+}
+
+.action-menu button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 10px 10px;
+  border-radius: 8px;
+  margin: 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.action-menu button:hover {
+  background: #f8fafc;
+}
+
+.action-menu .danger {
+  color: var(--danger);
+}
+
+.purpose-cell {
+  text-align: left;
+  min-width: 170px;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 20px 14px 40px;
+  }
+
+  h2 {
+    font-size: 24px;
+  }
+
+  .card {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .filter-row,
+  .top-row,
+  .result-summary {
+    grid-template-columns: 1fr;
+  }
+
+  th, td {
+    padding: 12px 6px;
+    font-size: 13px;
+  }
+
+  .menu button {
+    font-size: 13px;
+    padding: 12px 10px;
+  }
+
+  .bar-wrap {
+    height: 320px;
+  }
+
+  .search-inline {
+    flex-direction: column;
+  }
+
+  .search-inline button {
+    width: 100%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h2>CX HRBP 회의비 대시보드</h2>
+
+<div class="menu">
+  <button class="active" onclick="go('main')">회의비 관리</button>
+  <button onclick="go('stat')">월별 사용현황</button>
+</div>
+
+<!-- 메인 -->
+<div id="main">
+  <div class="card">
+    <form id="expenseForm">
+      <input type="date" id="date" required>
+
+      <select id="team">
+        <option>HRBP</option>
+        <option>경험기획팀</option>
+        <option>CX Insight팀</option>
+        <option>Galaxy Eco PP팀</option>
+        <option>차세대경험기획팀</option>
+        <option>스마트폰PP팀</option>
+        <option>전략파트너십팀</option>
+        <option>디자인팀</option>
+        <option>UX팀</option>
+        <option>SC+팀</option>
+      </select>
+
+      <input type="number" id="amount" placeholder="금액" required>
+
+      <select id="purpose">
+        <option>회식</option>
+        <option>간담회</option>
+        <option>경품</option>
+        <option>선물</option>
+        <option>간식</option>
+      </select>
+
+      <textarea id="note" placeholder="비고"></textarea>
+
+      <button type="submit" class="save">저장</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <select id="monthFilter" onchange="renderTable()">
+      <option value="">전체</option>
+    </select>
+
+    <table>
+      <thead>
+        <tr>
+          <th>날짜</th>
+          <th>팀</th>
+          <th>금액</th>
+          <th>목적</th>
+          <th>관리</th>
+        </tr>
+      </thead>
+      <tbody id="table"></tbody>
+    </table>
+
+    <div class="total" id="totalAmount">총합: 0원</div>
+    <div class="total" id="budgetTotal">예산: 0원</div>
+    <div class="total" id="remainAmount">잔여: 0원</div>
+
+    <div class="budget-box">
+      <input type="number" id="budgetInput" placeholder="총 예산 입력">
+      <button type="button" class="action-btn" onclick="setBudget()">예산 저장</button>
+      <div class="info-text">입력한 총 예산은 브라우저에 저장되며, 다시 수정할 때까지 유지됩니다.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 통계 -->
+<div id="stat" class="hidden">
+  <div class="top-row">
+    <div class="card">
+      <div class="section-title">🤖 AI 분석</div>
+      <div id="aiComment" class="ai-box">데이터 불러오는 중...</div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">🔎 검색</div>
+      <div class="search-box">
+        <div class="search-inline">
+          <input type="text" id="searchKeyword" placeholder="이름, 팀, 부서, 월(예: 홍길동 / HRBP / 2026-03 / HRBP 3월)">
+          <button type="button" class="action-btn" onclick="runSearch()">검색</button>
+        </div>
+        <div class="search-help">
+          이름 / 팀 / 부서 / 월 / 목적 / 비고 키워드를 함께 입력해도 검색됩니다.
+        </div>
+        <div id="searchResultArea">
+          <div class="search-result-empty">검색어를 입력하면 관련 사용현황과 사유 요약을 보여줍니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">🏆 팀별 사용 TOP 랭킹</div>
+    <table>
+      <thead>
+        <tr>
+          <th>순위</th>
+          <th>팀</th>
+          <th>사용금액</th>
+          <th>비중</th>
+        </tr>
+      </thead>
+      <tbody id="rankingTable"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="stat-header">
+      <strong>통계 필터</strong>
+      <span class="last-sync" id="lastSyncText">최근 동기화: -</span>
+    </div>
+
+    <div class="filter-row">
+      <select id="monthSelect" onchange="drawAllStats()">
+        <option value="">전체 월</option>
+      </select>
+
+      <select id="teamSelect" onchange="drawAllStats()">
+        <option value="">전체 팀</option>
+      </select>
+
+      <select id="excludeSelect" onchange="drawAllStats()">
+        <option value="exclude_off" selected>행복한 하루 되세요</option>
+        <option value="all">화이팅</option>
+      </select>
+    </div>
+
+    <button type="button" class="action-btn secondary" onclick="loadSheetData(true)">지금 새로고침</button>
+  </div>
+
+  <div class="card">
+    <div class="section-title">📊 팀별 사용현황</div>
+    <div class="bar-wrap">
+      <canvas id="teamBarChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+let dataList = JSON.parse(localStorage.getItem('dataList')) || [];
+let budget = Number(localStorage.getItem('budget')) || 1000000;
+let editIndex = null;
+let sheetData = [];
+
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz41RIHoTa06E9IlOF7bDBnCjThE9OURnDiQ4mw32WukKB5wiWO3WD6dDV1RvMd-S7y9Q/exec";
+const form = document.getElementById('expenseForm');
+
+const teamColors = {
+  "HRBP": "#4CAF50",
+  "경험기획팀": "#2196F3",
+  "CX Insight팀": "#FF9800",
+  "Galaxy Eco PP팀": "#9C27B0",
+  "차세대경험기획팀": "#E91E63",
+  "스마트폰PP침": "#00BCD4",
+  "전략파트너십팀": "#8BC34A",
+  "디자인팀": "#FFC107",
+  "UX팀": "#3F51B5",
+  "SC+팀": "#795548"
+};
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const item = {
+    date: date.value,
+    team: team.value,
+    amount: Number(amount.value),
+    purpose: purpose.value,
+    note: note.value || ""
+  };
+
+  const saveBtn = form.querySelector('.save');
+  const originalText = saveBtn.innerText;
+  saveBtn.disabled = true;
+  saveBtn.innerText = "저장 중...";
+
+  try {
+    // 시트에는 항상 append 누적 저장
+    await appendToSheet(item);
+
+    // 웹페이지에서는 기존처럼 수정/삭제 가능
+    if (editIndex !== null) {
+      dataList[editIndex] = item;
+      editIndex = null;
+    } else {
+      dataList.push(item);
+    }
+
+    save();
+    form.reset();
+
+    setTimeout(() => {
+      loadSheetData();
+    }, 500);
+  } catch (err) {
+    console.error("시트 저장 실패:", err);
+    alert("구글 스프레드시트 저장에 실패했습니다. Apps Script doPost 설정을 한 번 확인해 주세요.");
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerText = originalText;
+  }
+});
+
+async function appendToSheet(item) {
+  // Apps Script에서 e.parameter / form-data 방식이 더 잘 먹는 경우가 많아서 URLSearchParams 사용
+  const formBody = new URLSearchParams();
+  formBody.append("date", item.date);
+  formBody.append("team", item.team);
+  formBody.append("amount", item.amount);
+  formBody.append("purpose", item.purpose);
+  formBody.append("note", item.note);
+  formBody.append("mode", "append");
+
+  const res = await fetch(SCRIPT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+    },
+    body: formBody.toString()
+  });
+
+  // Apps Script가 JSON을 안 주더라도 네트워크 레벨 실패만 아니면 통과
+  return res;
+}
+
+function setBudget() {
+  budget = Number(document.getElementById('budgetInput').value) || 0;
+  localStorage.setItem('budget', budget);
+  updateBudgetInput();
+  renderTable();
+}
+
+function updateBudgetInput() {
+  document.getElementById('budgetInput').value = budget || "";
+}
+
+function save() {
+  localStorage.setItem('dataList', JSON.stringify(dataList));
+  update();
+}
+
+function escapeHtml(str = "") {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function renderTable() {
+  const tableBody = document.getElementById('table');
+  const monthFilter = document.getElementById('monthFilter').value;
+  tableBody.innerHTML = '';
+
+  let total = 0;
+
+  dataList.forEach((d, i) => {
+    const month = String(d.date).slice(0, 7);
+    if (monthFilter && month !== monthFilter) return;
+
+    total += Number(d.amount || 0);
+
+    tableBody.innerHTML += `
+      <tr>
+        <td>${escapeHtml(d.date)}</td>
+        <td>${escapeHtml(d.team)}</td>
+        <td>${Number(d.amount).toLocaleString()}원</td>
+        <td class="purpose-cell">
+          ${escapeHtml(d.purpose)}
+          ${d.note ? `<span class="note-inline">${escapeHtml(d.note)}</span>` : ""}
+        </td>
+        <td>
+          <div class="action-menu-wrap">
+            <button class="action-menu-btn" onclick="toggleActionMenu(event, ${i})">⋮</button>
+            <div class="action-menu" id="actionMenu_${i}">
+              <button onclick="editData(${i})">수정</button>
+              <button class="danger" onclick="deleteData(${i})">삭제</button>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+
+  const remain = budget - total;
+
+  document.getElementById('totalAmount').innerText = "총합: " + total.toLocaleString() + "원";
+  document.getElementById('budgetTotal').innerText = "예산: " + budget.toLocaleString() + "원";
+  document.getElementById('remainAmount').innerText = "잔여: " + remain.toLocaleString() + "원";
+  document.getElementById('remainAmount').style.color = remain < 0 ? "#c24141" : "#111827";
+}
+
+function toggleActionMenu(event, index) {
+  event.stopPropagation();
+  document.querySelectorAll('.action-menu').forEach(menu => {
+    if (menu.id !== `actionMenu_${index}`) menu.classList.remove('show');
+  });
+  const target = document.getElementById(`actionMenu_${index}`);
+  if (target) target.classList.toggle('show');
+}
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('.action-menu').forEach(menu => menu.classList.remove('show'));
+});
+
+function editData(i) {
+  const d = dataList[i];
+  document.getElementById('date').value = d.date;
+  document.getElementById('team').value = d.team;
+  document.getElementById('amount').value = d.amount;
+  document.getElementById('purpose').value = d.purpose;
+  document.getElementById('note').value = d.note || "";
+  editIndex = i;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteData(i) {
+  dataList.splice(i, 1);
+  save();
+}
+
+function setMonth() {
+  const months = [...new Set(dataList.map(d => String(d.date).slice(0, 7)).filter(Boolean))].sort();
+  const monthFilter = document.getElementById('monthFilter');
+  const current = monthFilter.value;
+
+  monthFilter.innerHTML = '<option value="">전체</option>';
+  months.forEach(m => {
+    monthFilter.innerHTML += `<option value="${m}">${m}</option>`;
+  });
+
+  if (months.includes(current)) {
+    monthFilter.value = current;
+  }
+}
+
+async function loadSheetData(showAlert = false) {
+  try {
+    const res = await fetch(SCRIPT_URL);
+    const raw = await res.json();
+
+    sheetData = raw.map(row => {
+      const excludeRaw = String(
+        row.exclude ??
+        row.제외 ??
+        row.excluded ??
+        ""
+      ).trim().toLowerCase();
+
+      return {
+        date: normalizeDate(row.date),
+        team: row.team || "",
+        amount: Number(row.amount || 0),
+        purpose: row.purpose || "",
+        note: row.note || "",
+        exclude: ["y", "yes", "true", "1", "제외", "포함제외"].includes(excludeRaw),
+        rawSearch: [
+          row.date, row.team, row.amount, row.purpose, row.note,
+          row.name, row.person, row.user, row.employee, row.department,
+          row.exclude, row.제외
+        ].filter(Boolean).join(" ")
+      };
+    }).filter(d => d.date && d.team);
+
+    setStatFilters();
+    drawAllStats();
+    updateLastSync();
+
+    if (showAlert) {
+      alert("최신 데이터로 새로고침 완료");
+    }
+  } catch (err) {
+    console.error("시트 불러오기 실패:", err);
+    if (showAlert) {
+      alert("시트 데이터를 불러오지 못했습니다. Apps Script doGet 확인이 필요합니다.");
+    }
+  }
+}
+
+function normalizeDate(value) {
+  if (!value) return '';
+
+  if (typeof value === 'string') {
+    if (value.includes('T')) return value.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    if (value.includes('/')) {
+      const d = new Date(value);
+      if (!isNaN(d)) return formatDate(d);
+    }
+    return value.slice(0, 10);
+  }
+
+  const d = new Date(value);
+  if (!isNaN(d)) return formatDate(d);
+
+  return '';
+}
+
+function formatDate(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function setStatFilters() {
+  const monthSelect = document.getElementById('monthSelect');
+  const teamSelect = document.getElementById('teamSelect');
+
+  const currentMonth = monthSelect.value;
+  const currentTeam = teamSelect.value;
+
+  const months = [...new Set(sheetData.map(d => d.date.slice(0, 7)).filter(Boolean))].sort();
+  const teams = [...new Set(sheetData.map(d => d.team).filter(Boolean))].sort();
+
+  monthSelect.innerHTML = '<option value="">전체 월</option>';
+  months.forEach(m => {
+    monthSelect.innerHTML += `<option value="${m}">${m}</option>`;
+  });
+
+  teamSelect.innerHTML = '<option value="">전체 팀</option>';
+  teams.forEach(t => {
+    teamSelect.innerHTML += `<option value="${t}">${t}</option>`;
+  });
+
+  if (months.includes(currentMonth)) monthSelect.value = currentMonth;
+  if (teams.includes(currentTeam)) teamSelect.value = currentTeam;
+}
+
+function getFilteredSheetData() {
+  const monthFilter = document.getElementById('monthSelect').value;
+  const teamFilter = document.getElementById('teamSelect').value;
+  const excludeMode = document.getElementById('excludeSelect').value;
+
+  return sheetData.filter(d => {
+    const month = d.date.slice(0, 7);
+    const monthOk = !monthFilter || month === monthFilter;
+    const teamOk = !teamFilter || d.team === teamFilter;
+    const excludeOk = excludeMode === 'all' ? true : !d.exclude;
+    return monthOk && teamOk && excludeOk;
+  });
+}
+
+function drawAllStats() {
+  drawBarChart();
+  drawAIAnalysis();
+  drawRanking();
+  runSearch(false);
+}
+
+function drawBarChart() {
+  const filtered = getFilteredSheetData();
+
+  const sums = {};
+  filtered.forEach(d => {
+    sums[d.team] = (sums[d.team] || 0) + Number(d.amount || 0);
+  });
+
+  const labels = Object.keys(sums);
+  const values = Object.values(sums);
+
+  if (window.teamBarChartInstance) {
+    window.teamBarChartInstance.destroy();
+  }
+
+  const ctx = document.getElementById('teamBarChart');
+
+  window.teamBarChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels.length ? labels : ['데이터 없음'],
+      datasets: [{
+        label: '사용금액',
+        data: values.length ? values : [0],
+        backgroundColor: labels.length ? labels.map(t => teamColors[t] || '#94a3b8') : ['#d1d5db'],
+        borderRadius: 6,
+        barPercentage: 0.45,
+        categoryPercentage: 0.65,
+        maxBarThickness: 22
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      responsive: true,
+      plugins: {
+        legend: {
+          display: false
+        },
+        title: {
+          display: true,
+          text: '팀별 사용현황'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const val = Number(context.raw || 0);
+              return `${val.toLocaleString()}원`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            autoSkip: false,
+            maxRotation: 40,
+            minRotation: 0
+          },
+          grid: {
+            display: false
+          }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return Number(value).toLocaleString() + '원';
+            }
+          },
+          grid: {
+            color: 'rgba(148, 163, 184, 0.18)'
+          }
+        }
+      }
+    }
+  });
+}
+
+function drawAIAnalysis() {
+  const monthFilter = document.getElementById('monthSelect').value;
+  const teamFilter = document.getElementById('teamSelect').value;
+  const excludeMode = document.getElementById('excludeSelect').value;
+  const filtered = getFilteredSheetData().filter(d => d.team !== 'CX실');
+  const aiComment = document.getElementById('aiComment');
+
+  if (!filtered.length) {
+    aiComment.innerText = "선택한 조건에 해당하는 데이터가 없습니다.";
+    return;
+  }
+
+  const teamSum = {};
+  filtered.forEach(d => {
+    teamSum[d.team] = (teamSum[d.team] || 0) + Number(d.amount || 0);
+  });
+
+  const sortedTeams = Object.entries(teamSum).sort((a, b) => b[1] - a[1]);
+  const total = sortedTeams.reduce((sum, [, amt]) => sum + amt, 0);
+  const [topTeam, topAmount] = sortedTeams[0];
+  const topRatio = total ? ((topAmount / total) * 100).toFixed(1) : '0.0';
+
+  const avg = filtered.length ? Math.round(total / filtered.length) : 0;
+  const purposeSum = {};
+  filtered.forEach(d => {
+    const key = d.purpose || '기타';
+    purposeSum[key] = (purposeSum[key] || 0) + Number(d.amount || 0);
+  });
+  const topPurpose = Object.entries(purposeSum).sort((a, b) => b[1] - a[1])[0]?.[0] || '기타';
+
+  let comment = `기준: ${monthFilter || '전체 월'}${teamFilter ? ` / ${teamFilter}` : ''}\n`;
+  comment += `- 최다 사용 팀: ${topTeam} (${topAmount.toLocaleString()}원, 전체의 ${topRatio}%)\n`;
+  comment += `- 건당 평균 사용 금액: ${avg.toLocaleString()}원\n`;
+  comment += `- 주요 사용 목적: ${topPurpose}\n`;
+
+  if (Number(topRatio) >= 40) {
+    comment += `- 해석: 특정 팀에 사용이 집중되어 있어 월간 모니터링이 필요합니다.`;
+  } else if (Number(topRatio) >= 25) {
+    comment += `- 해석: 일부 팀 중심으로 사용되나, 전체적으로는 비교 가능한 수준입니다.`;
+  } else {
+    comment += `- 해석: 팀별 사용이 비교적 분산되어 있습니다.`;
+  }
+
+  aiComment.innerText = comment;
+}
+
+function drawRanking() {
+  const filtered = getFilteredSheetData();
+  const rankingTable = document.getElementById('rankingTable');
+
+  rankingTable.innerHTML = '';
+
+  if (!filtered.length) {
+    rankingTable.innerHTML = `
+      <tr>
+        <td colspan="4">데이터 없음</td>
+      </tr>
+    `;
+    return;
+  }
+
+  const sums = {};
+  filtered.forEach(d => {
+    sums[d.team] = (sums[d.team] || 0) + Number(d.amount || 0);
+  });
+
+  const total = Object.values(sums).reduce((a, b) => a + b, 0);
+  const sorted = Object.entries(sums).sort((a, b) => b[1] - a[1]);
+
+  sorted.forEach((item, i) => {
+    const ratio = total ? ((item[1] / total) * 100).toFixed(1) : '0.0';
+    rankingTable.innerHTML += `
+      <tr>
+        <td><span class="rank-badge">${i + 1}</span></td>
+        <td>${escapeHtml(item[0])}</td>
+        <td>${item[1].toLocaleString()}원</td>
+        <td>${ratio}%</td>
+      </tr>
+    `;
+  });
+}
+
+function normalizeSearchKeyword(keyword) {
+  return keyword
+    .replaceAll("년", "-")
+    .replaceAll("월", "")
+    .replaceAll(".", "-")
+    .replaceAll("/", "-")
+    .trim()
+    .toLowerCase();
+}
+
+function buildSearchText(d) {
+  return [
+    d.date,
+    d.date.slice(0, 7),
+    d.team,
+    d.purpose,
+    d.note,
+    d.rawSearch
+  ].join(" ").toLowerCase();
+}
+
+function summarizePurposes(rows) {
+  const map = {};
+  rows.forEach(r => {
+    const key = r.purpose || "기타";
+    map[key] = (map[key] || 0) + r.amount;
+  });
+  return Object.entries(map)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([k,v]) => `${k} ${v.toLocaleString()}원`)
+    .join(", ");
+}
+
+function groupSearchResults(rows) {
+  const grouped = {};
+
+  rows.forEach(r => {
+    const key = `${r.team}__${r.date.slice(0,7)}`;
+    if (!grouped[key]) {
+      grouped[key] = {
+        team: r.team,
+        month: r.date.slice(0,7),
+        rows: []
+      };
+    }
+    grouped[key].rows.push(r);
+  });
+
+  return Object.values(grouped).sort((a, b) => {
+    if (a.month === b.month) return a.team.localeCompare(b.team);
+    return b.month.localeCompare(a.month);
+  });
+}
+
+function runSearch(manual = true) {
+  const keywordInput = document.getElementById('searchKeyword');
+  const area = document.getElementById('searchResultArea');
+  const keyword = normalizeSearchKeyword(keywordInput.value || "");
+  const baseData = getFilteredSheetData();
+
+  if (!keyword) {
+    area.innerHTML = `<div class="search-result-empty">검색어를 입력하면 관련 사용현황과 사유 요약을 보여줍니다.</div>`;
+    return;
+  }
+
+  const tokens = keyword.split(/\s+/).filter(Boolean);
+
+  const matched = baseData.filter(d => {
+    const text = buildSearchText(d);
+    return tokens.every(token => text.includes(token));
+  });
+
+  if (!matched.length) {
+    area.innerHTML = `<div class="search-result-empty">검색 결과가 없습니다. 다른 이름, 팀명, 월, 목적, 비고로 다시 검색해보세요.</div>`;
+    return;
+  }
+
+  const grouped = groupSearchResults(matched);
+
+  area.innerHTML = `
+    <div class="accordion-list">
+      ${grouped.map((group, idx) => {
+        const total = group.rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+        const count = group.rows.length;
+        const avg = count ? Math.round(total / count) : 0;
+        const purposeSummary = summarizePurposes(group.rows);
+        const reasonSummary = group.rows
+          .slice(0, 5)
+          .map(r => `${r.date} · ${r.purpose}${r.note ? ` (${r.note})` : ''}`)
+          .join('<br>');
+
+        return `
+          <div class="accordion-item ${idx === 0 ? 'open' : ''}">
+            <button class="accordion-head" onclick="toggleAccordion(event, ${idx})">
+              <div class="accordion-main">
+                <div class="accordion-title">${escapeHtml(group.team)} / ${escapeHtml(group.month)}</div>
+                <div class="accordion-sub">검색 건수 ${count}건 · 총 사용금액 ${total.toLocaleString()}원</div>
+              </div>
+              <div class="accordion-arrow" id="accordionArrow_${idx}">⌄</div>
+            </button>
+
+            <div class="accordion-body" id="accordionBody_${idx}">
+              <div class="result-summary">
+                <div class="result-chip">
+                  <div class="label">월별 사용현황</div>
+                  <div class="value">${total.toLocaleString()}원</div>
+                </div>
+                <div class="result-chip">
+                  <div class="label">건수</div>
+                  <div class="value">${count}건</div>
+                </div>
+                <div class="result-chip">
+                  <div class="label">평균 사용금액</div>
+                  <div class="value">${avg.toLocaleString()}원</div>
+                </div>
+              </div>
+
+              <div class="result-detail-box">
+                <div class="result-detail-title">사유 요약</div>
+                <div class="result-detail-line">${escapeHtml(purposeSummary)}</div>
+              </div>
+
+              <div class="result-detail-box">
+                <div class="result-detail-title">상세 내역</div>
+                <div class="result-detail-line">${reasonSummary || '-'}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function toggleAccordion(event, idx) {
+  const item = event.currentTarget.closest('.accordion-item');
+  item.classList.toggle('open');
+}
+
+document.getElementById('searchKeyword').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    runSearch();
+  }
+});
+
+function updateLastSync() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  document.getElementById('lastSyncText').innerText = `최근 동기화: ${hh}:${mm}:${ss}`;
+}
+
+function update() {
+  updateBudgetInput();
+  renderTable();
+  setMonth();
+  loadSheetData();
+}
+
+function go(p) {
+  document.getElementById('main').classList.add('hidden');
+  document.getElementById('stat').classList.add('hidden');
+
+  document.querySelectorAll('.menu button').forEach(b => b.classList.remove('active'));
+
+  if (p === 'main') {
+    document.getElementById('main').classList.remove('hidden');
+    document.querySelectorAll('.menu button')[0].classList.add('active');
+  } else {
+    document.getElementById('stat').classList.remove('hidden');
+    document.querySelectorAll('.menu button')[1].classList.add('active');
+    loadSheetData();
+  }
+}
+
+setInterval(() => {
+  loadSheetData();
+}, 10000);
+
+update();
+</script>
+
+</body>
+</html>
